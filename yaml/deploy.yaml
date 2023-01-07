@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapi
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapi
+  template:
+    metadata:
+      labels:
+        app: myapi
+    spec:
+      nodeName: vm-0-16-centos # 只调度到这个节点上
+      containers:
+        - name: myapi
+          image: alpine:3.12
+          imagePullPolicy: IfNotPresent
+          command: [ "./myapi" ]
+          workingDir: "/app"
+          ports:
+            - containerPort: 8443
+          volumeMounts:
+            - name: app
+              mountPath: /app
+            - name: cert
+              mountPath: /etc/kubernetes/pki
+      volumes:
+        - name: app
+          hostPath:
+            path: /root/k8s-aggregator-apiserver
+        - name: cert # 挂载api-server的CA文件
+          hostPath:
+            path: /etc/kubernetes/pki
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapi
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8443
+      targetPort: 8443
+  selector:
+    app: myapi
