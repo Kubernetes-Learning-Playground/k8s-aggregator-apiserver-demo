@@ -4,22 +4,27 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s_aggregator_apiserver/pkg/apis/myingress/v1beta1"
+	"k8s_aggregator_apiserver/pkg/builders"
+	"k8s_aggregator_apiserver/pkg/configs"
+	"k8s_aggregator_apiserver/pkg/store"
+	"k8s_aggregator_apiserver/pkg/utils"
 	"log"
 	"strings"
 )
 
 //把 xx=xx,xx=xxx  解析为一个map
-func parseLabelQuery(query string ) map[string]string  {
+func parseLabelQuery(query string) map[string]string {
 	m := make(map[string]string)
 	if query == "" {
 		return m
 	}
-	qs := strings.Split(query,",")
+	qs := strings.Split(query, ",")
 	if len(qs) == 0 {
 		return m
 	}
 	for _, q := range qs {
-		qPair := strings.Split(q,"=")
+		qPair := strings.Split(q, "=")
 		if len(qPair) == 2 {
 			m[qPair[0]] = qPair[1]
 		}
@@ -27,8 +32,7 @@ func parseLabelQuery(query string ) map[string]string  {
 	return m
 }
 
-
-var rootJson=`
+var rootJson = `
 {
   "kind":"APIResourceList",
   "apiVersion":"v1",
@@ -37,7 +41,7 @@ var rootJson=`
      {"name":"mypods","singularName":"mypod","shortNames":["mp"],"namespaced":true,"kind":"MyPod","verbs":["get","list"]}
   ]}
 `
-var podsListv2=`
+var podsListv2 = `
 {
   "kind": "MyPodList",
   "apiVersion": "apis.jtthink.com/v1beta1",
@@ -58,7 +62,7 @@ var podsListv2=`
    ]
 }
 `
-var podsListv1=`
+var podsListv1 = `
 {
   "kind": "MyPodList",
   "apiVersion": "apis.jtthink.com/v1beta1",
@@ -79,7 +83,7 @@ var podsListv1=`
    ]
 }
 `
-var podDetail =`
+var podDetail = `
 {
   "kind": "MyPod",
   "apiVersion": "apis.jtthink.com/v1beta1",
@@ -98,8 +102,15 @@ var podDetail =`
 }
 `
 
+var (
+	ROOTURL = fmt.Sprintf("/apis/%s/%s", v1beta1.SchemeGroupVersion.Group, v1beta1.SchemeGroupVersion.Version)
+	//根据NS 获取 myingress列表
+	ListByNS_URL = fmt.Sprintf("/apis/%s/%s/namespaces/:ns/%s", v1beta1.SchemeGroupVersion.Group, v1beta1.SchemeGroupVersion.Version, v1beta1.ResourceName)
+)
 
 func main() {
+
+	configs.InitInformer()
 
 	r := gin.New()
 
@@ -109,36 +120,47 @@ func main() {
 		c.Next()
 	})
 
-	r.GET("/apis/apis.jtthink.com/v1beta1", func(c *gin.Context) {
-		c.Header("content-type","application/json")
-		c.String(200, rootJson)
+	r.GET(ROOTURL, func(c *gin.Context) {
+		c.JSON(200, builders.ApiResourceList())
 	})
 
-	//列表  （根据ns)
+	r.GET("/apis/apis.jtthink.com/v1beta1/namespaces/:ns/myingresses", func(c *gin.Context) {
+		ns := c.Param("ns")
+		res := utils.ConvertToTable(store.ListIngressMap(ns))
+		c.JSON(200, res)
+	})
+
+	// 模拟用的，不需要了。
+	//r.GET("/apis/apis.jtthink.com/v1beta1", func(c *gin.Context) {
+	//	c.Header("content-type","application/json")
+	//	c.String(200, rootJson)
+	//})
+
+	//列表: 根据namespace来查询pods
 	r.GET("/apis/apis.jtthink.com/v1beta1/namespaces/:ns/mypods", func(c *gin.Context) {
-		c.Header("content-type","application/json")
+		c.Header("content-type", "application/json")
 
 		// 解析出query 参数(labelQuery)
 		labelQueryMap := parseLabelQuery(c.Query("labelSelector"))
 		json := ""
 		if v, ok := labelQueryMap["version"]; ok {
 			if v == "1" {
-				json=strings.Replace(podsListv1,"default",c.Param("ns"),-1)
+				json = strings.Replace(podsListv1, "default", c.Param("ns"), -1)
 			}
 		}
 
 		if json == "" {
-			json = strings.Replace(podsListv2,"default",c.Param("ns"),-1)
+			json = strings.Replace(podsListv2, "default", c.Param("ns"), -1)
 		}
 
-		c.String(200,json)
+		c.String(200, json)
 	})
 
-	//列表  （所有 )
+	//列表 list
 	r.GET("/apis/apis.jtthink.com/v1beta1/mypods", func(c *gin.Context) {
-		c.Header("content-type","application/json")
-		json := strings.Replace(podsListv1,"default","all",-1)
-		c.String(200,json)
+		c.Header("content-type", "application/json")
+		json := strings.Replace(podsListv1, "default", "all", -1)
+		c.String(200, json)
 	})
 
 	//详细 （根据ns)
@@ -152,27 +174,23 @@ func main() {
 		t := metav1.Table{}
 		t.Kind = "Table"
 		t.APIVersion = "meta.k8s.io/v1"
-		t.ColumnDefinitions = []metav1.TableColumnDefinition {
+		t.ColumnDefinitions = []metav1.TableColumnDefinition{
 			{Name: "name", Type: "string"},
 			{Name: "命名空间", Type: "string"},
 			{Name: "状态", Type: "string"},
 		}
 		t.Rows = []metav1.TableRow{
 			{Cells: []interface{}{c.Param("name"),
-				c.Param("ns"),"准备好了"} ,
+				c.Param("ns"), "准备好了"},
 			},
 		}
-		c.JSON(200,t)
+		c.JSON(200, t)
 
 	})
 
-
 	if err := r.RunTLS(":8443",
-		"/etc/kubernetes/pki/aaserver.crt","/etc/kubernetes/pki/aaserver.key"); err != nil {
+		"/etc/kubernetes/pki/aaserver.crt", "/etc/kubernetes/pki/aaserver.key"); err != nil {
 		log.Fatalln(err)
 	}
-
-
-
 
 }

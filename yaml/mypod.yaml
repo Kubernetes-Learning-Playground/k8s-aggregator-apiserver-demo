@@ -1,0 +1,7 @@
+apiVersion: apis.jtthink.com/v1beta1
+kind: MyPod
+metadata:
+  name: mypod
+  namespace: default
+spec:
+  replicas: 1
