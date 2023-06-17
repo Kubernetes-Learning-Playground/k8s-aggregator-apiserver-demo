@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/practice/k8s_aggregator_apiserver/pkg/apis/myingress/v1beta1"
+	"github.com/practice/k8s_aggregator_apiserver/pkg/store"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -9,13 +11,14 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
 	netutils "k8s.io/utils/net"
-	"k8s_aggregator_apiserver/pkg/apis/myingress/v1beta1"
-	"k8s_aggregator_apiserver/pkg/store"
 	"log"
 	"net"
 )
 
-const RemoteKubeConfig = "./resources/config"
+const (
+	RemoteKubeConfig      = "./resources/config"
+	defaultEtcdPathPrefix = "/registry/myapi.jtthink.com"
+)
 
 var (
 	// Scheme 定义了资源序列化和反序列化的方法以及资源类型和版本的对应关系
@@ -27,15 +30,25 @@ var (
 //推荐配置 模板
 func getRcOpt() *genericoptions.RecommendedOptions {
 	rc := genericoptions.NewRecommendedOptions(
-		"",
+		defaultEtcdPathPrefix,
 		Codecs.LegacyCodec(v1beta1.SchemeGroupVersion), //JSON格式的编码器
 	)
 
+	rc.Etcd.StorageConfig.Transport.ServerList = []string{"http://127.0.0.1:2379"}
+	rc.CoreAPI.CoreAPIKubeconfigPath = RemoteKubeConfig
+
 	rc.SecureServing.BindPort = 6443
 	rc.SecureServing.ServerCert = genericoptions.GeneratableKeyCert{
-		CertDirectory: "./certs",
+		CertDirectory: "./cert",
 		PairName:      "aaserver",
 	}
+
+	// 不需要依赖主api-server依赖
+	rc.CoreAPI = nil
+	rc.Admission = nil
+	rc.Authentication = nil
+	rc.Admission = nil
+
 	rc.CoreAPI.CoreAPIKubeconfigPath = RemoteKubeConfig
 	rc.Authentication.RemoteKubeConfigFile = RemoteKubeConfig
 	rc.Authorization.RemoteKubeConfigFile = RemoteKubeConfig

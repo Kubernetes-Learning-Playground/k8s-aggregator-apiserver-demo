@@ -1,7 +1,7 @@
 apiVersion: apiregistration.k8s.io/v1
 kind: APIService
 metadata:
-  name: v1beta1.apis.jtthink.com
+  name: v1beta1.apis.jtthink.com  # group 与 apiVersion
 spec:
   service:
     name: myapi # 注意这里需要和service相同

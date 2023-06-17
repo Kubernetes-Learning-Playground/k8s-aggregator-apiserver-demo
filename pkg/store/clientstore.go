@@ -1,10 +1,10 @@
 package store
 
 import (
+	"github.com/practice/k8s_aggregator_apiserver/pkg/apis/myingress/v1beta1"
+	"github.com/practice/k8s_aggregator_apiserver/pkg/configs"
 	v1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s_aggregator_apiserver/pkg/apis/myingress/v1beta1"
-	"k8s_aggregator_apiserver/pkg/configs"
 )
 
 type ClientStore struct{}

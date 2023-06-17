@@ -1,8 +1,8 @@
 package store
 
 import (
+	"github.com/practice/k8s_aggregator_apiserver/pkg/apis/myingress/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s_aggregator_apiserver/pkg/apis/myingress/v1beta1"
 	"time"
 )
 

@@ -1,12 +1,18 @@
 package configs
 
 import (
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
-	"log"
 	"os"
 )
+
+var K8sClient kubernetes.Interface
+
+func init() {
+	K8sClient = InitClient()
+}
 
 func K8sRestConfigInCluster() *rest.Config {
 	config, err := rest.InClusterConfig()
@@ -19,7 +25,7 @@ func K8sRestConfigInCluster() *rest.Config {
 func K8sRestConfig() *rest.Config {
 	if os.Getenv("release") == "1" {
 		klog.Infof("run in cluster")
-		return K8sRestConfig()
+		return K8sRestConfigInCluster()
 	}
 
 	klog.Infof("run outside cluster, debug mode")

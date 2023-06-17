@@ -13,6 +13,7 @@ spec:
       labels:
         app: myapi
     spec:
+      serviceAccountName: jtthink-aa-sa
       nodeName: vm-0-16-centos # 只调度到这个节点上
       containers:
         - name: myapi

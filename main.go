@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/practice/k8s_aggregator_apiserver/pkg/apis/myingress/v1beta1"
+	"github.com/practice/k8s_aggregator_apiserver/pkg/builders"
+	"github.com/practice/k8s_aggregator_apiserver/pkg/configs"
+	"github.com/practice/k8s_aggregator_apiserver/pkg/store"
+	"github.com/practice/k8s_aggregator_apiserver/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s_aggregator_apiserver/pkg/apis/myingress/v1beta1"
-	"k8s_aggregator_apiserver/pkg/builders"
-	"k8s_aggregator_apiserver/pkg/configs"
-	"k8s_aggregator_apiserver/pkg/store"
-	"k8s_aggregator_apiserver/pkg/utils"
 	"log"
 	"strings"
 )
@@ -120,13 +120,21 @@ func main() {
 		c.Next()
 	})
 
+	// 根 必须实现
 	r.GET(ROOTURL, func(c *gin.Context) {
 		c.JSON(200, builders.ApiResourceList())
 	})
 
-	r.GET("/apis/apis.jtthink.com/v1beta1/namespaces/:ns/myingresses", func(c *gin.Context) {
+	//r.GET("/apis/apis.jtthink.com/v1beta1/namespaces/:ns/myingresses", func(c *gin.Context) {
+	//	ns := c.Param("ns")
+	//	res := utils.ConvertToTable(store.ListIngressMap(ns))
+	//	c.JSON(200, res)
+	//})
+
+	r.GET(ListByNS_URL, func(c *gin.Context) {
 		ns := c.Param("ns")
-		res := utils.ConvertToTable(store.ListIngressMap(ns))
+		rr, _ := store.NewClientStore().ListByNamespaceOrAll(ns)
+		res := utils.ConvertToTable(rr)
 		c.JSON(200, res)
 	})
 
@@ -188,8 +196,11 @@ func main() {
 
 	})
 
-	if err := r.RunTLS(":8443",
-		"/etc/kubernetes/pki/aaserver.crt", "/etc/kubernetes/pki/aaserver.key"); err != nil {
+	//if err := r.RunTLS(":8443",
+	//	"/etc/kubernetes/pki/aaserver.crt", "/etc/kubernetes/pki/aaserver.key"); err != nil {
+	//	log.Fatalln(err)
+	//}
+	if err := r.RunTLS(":8443", "./cert/aaserver.crt", "./cert/aaserver.key"); err != nil {
 		log.Fatalln(err)
 	}
 

@@ -24,7 +24,6 @@ func InitInformer() {
 	stopC := make(chan struct{})
 	Factory.Start(stopC)
 	Factory.WaitForCacheSync(stopC)
-
 }
 
 var _ cache.ResourceEventHandler = &IngressHandler{}
