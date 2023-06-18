@@ -9,25 +9,24 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apiserver/pkg/registry/generic"
+	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
+	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
 	"k8s.io/kube-openapi/pkg/validation/validate"
-
-	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
-	"k8s.io/apiserver/pkg/registry/rest"
 )
 
 // REST implements a RESTStorage for API services against etcd
 type REST struct {
-	*genericregistry.Store //默认抽插的 ETCD
+	*genericregistry.Store
 }
 
+//
 func (*REST) ShortNames() []string {
 	return []string{"mi"}
 }
 
-// 没啥特别之处， 就是加了个判断 而已
 func RESTInPeace(storage rest.StandardStorage, err error) rest.StandardStorage {
 	if err != nil {
 		err = fmt.Errorf("unable to create REST storage for a resource due to %v, will die", err)
@@ -40,6 +39,7 @@ func RESTInPeace(storage rest.StandardStorage, err error) rest.StandardStorage {
 func NewStrategy(typer runtime.ObjectTyper) MyIngressStrategy {
 	return MyIngressStrategy{typer, names.SimpleNameGenerator}
 }
+
 func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
 
 	apiserver, ok := obj.(*v1beta1.MyIngress)
@@ -75,7 +75,7 @@ func (s MyIngressStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtim
 	return []string{}
 }
 
-// 创建时 是否要发出警告--- 发出个屁
+// 创建时 是否要发出警告
 func (s MyIngressStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
 	//TODO implement me
 	return []string{}

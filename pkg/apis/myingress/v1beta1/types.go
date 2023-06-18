@@ -8,6 +8,8 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/spec"
 )
 
+// $GOPATH/src/k8s.io/code-generator/generate-groups.sh all  github.com/myoperator/k8saggregatorapiserver/pkg/client github.com/myoperator/k8saggregatorapiserver/pkg/apis myingress:v1beta1
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +k8s:openapi-gen=true
