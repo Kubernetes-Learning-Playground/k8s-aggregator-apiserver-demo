@@ -17,14 +17,6 @@ import (
 	"net"
 )
 
-const (
-	defaultEtcdPathPrefix = "/registry/myapi.jtthink.com"
-	RemoteKubeConfig      = "./resources/config"
-	EtcdEndpoint          = "http://127.0.0.1:2379"
-	Port                  = 6443
-	CertFiles             = "./cert"
-)
-
 // TestServerOptions contains state for master/api server
 type TestServerOptions struct {
 	RecommendedOptions *genericoptions.RecommendedOptions
