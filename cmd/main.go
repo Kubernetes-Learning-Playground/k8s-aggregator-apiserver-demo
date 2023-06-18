@@ -21,12 +21,13 @@ var (
 
 func main() {
 
+	// 项目入参
 	flag.StringVar(&etcdEndpoint, "etcd-server-endpoint", "http://127.0.0.1:2379", "")
 	flag.StringVar(&remoteKubeConfig, "kube-config", "./resources/config", "")
 	flag.StringVar(&defaultEtcdPathPrefix, "defaultEtcdPathPrefix", "/registry/myapi.jtthink.com", "")
 	flag.StringVar(&certFiles, "certFiles", "./cert", "")
 	flag.StringVar(&pairName, "pairName", "aaserver", "")
-	flag.IntVar(&port, "server-port", 8443, "")
+	flag.IntVar(&port, "server-port", 6443, "")
 	flag.Parse()
 
 	// 配置文件

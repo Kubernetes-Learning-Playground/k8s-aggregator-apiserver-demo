@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: etcd
+  namespace: etcd01
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: etcd
+  template:
+    metadata:
+      labels:
+        app: etcd
+    spec:
+      containers:
+        - name: gateway
+          image: quay.io/coreos/etcd:v3.4.13
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ETCDCTL_API
+              value: "3"
+              value: "http://0.0.0.0:2379"
+            - name: ETCD_LISTEN_CLIENT_URLS
+              value: "http://0.0.0.0:2379"
+            - name: ETCD_ADVERTISE_CLIENT_URLS
+              value: "http://0.0.0.0:2379"
+          ports:
+            - containerPort: 2379
+              protocol: TCP
+              name: tcp01
+            - containerPort: 2380
+              protocol: TCP
+              name: tcp02
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: etcd
+  namespace: etcd01
+  labels:
+    name: etcd
+spec:
+  ports:
+    - name: etcd-01
+      protocol: TCP
+      targetPort: 2379
+      port: 2379
+    - name: etcd-02
+      protocol: TCP
+      targetPort: 2380
+      port: 2380
+  selector:
+    app: etcd
+
+# 启动etcd单机版 demo yaml文件

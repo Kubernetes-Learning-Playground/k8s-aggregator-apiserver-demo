@@ -17,24 +17,48 @@ spec:
       nodeName: vm-0-16-centos # 只调度到这个节点上
       containers:
         - name: myapi
-          image: alpine:3.12
+          image: aggregator-apiserver:v1
           imagePullPolicy: IfNotPresent
-          command: [ "./myapi" ]
-          workingDir: "/app"
           ports:
             - containerPort: 8443
+          args:
+            # 服务配置项
+            - --certFiles=/app/cert  # 证书文件
+            - --pairName=aaserver    # 证书名
+            - --server-port=8443     # 端口
+          env:
+            - name: "release"
+              value: "1"
           volumeMounts:
-            - name: app
-              mountPath: /app
             - name: cert
               mountPath: /etc/kubernetes/pki
+            - name: kubeconfig # 还没使用，会报错
+              mountPath: /root/.kube/config
+        - name: gateway
+          image: quay.io/coreos/etcd:v3.4.13
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ETCDCTL_API
+              value: "3"
+              value: "http://0.0.0.0:2379"
+            - name: ETCD_LISTEN_CLIENT_URLS
+              value: "http://0.0.0.0:2379"
+            - name: ETCD_ADVERTISE_CLIENT_URLS
+              value: "http://0.0.0.0:2379"
+          ports:
+            - containerPort: 2379
+              protocol: TCP
+              name: tcp01
+            - containerPort: 2380
+              protocol: TCP
+              name: tcp02
       volumes:
-        - name: app
-          hostPath:
-            path: /root/k8s-aggregator-apiserver
         - name: cert # 挂载api-server的CA文件
           hostPath:
             path: /etc/kubernetes/pki
+        - name: kubeconfig # 挂载kube-config文件
+          hostPath:
+            path: /root/.kube/config
 ---
 apiVersion: v1
 kind: Service

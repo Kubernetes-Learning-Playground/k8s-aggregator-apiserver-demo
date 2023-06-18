@@ -13,19 +13,23 @@ ENV GO111MODULE=on
 RUN go mod download
 
 # copy source code
-COPY main.go main.go
 COPY pkg/ pkg/
-COPY config/ config/
+COPY cmd/ cmd/
+COPY cert/ cert/
+COPY resources/ resources/
 # build
 RUN CGO_ENABLED=0 go build \
-    -a -o kube-aggregator-apiserver main.go
+    -a -o kube-aggregator-apiserver cmd/main.go
 
 FROM alpine:3.13
-
-RUN apk --no-cache add ca-certificates
+WORKDIR /app
 
 USER nobody
 
 COPY --from=builder --chown=nobody:nobody /app/kube-aggregator-apiserver .
+# 加载需要的证书文件
+COPY --from=builder /app/cert cert/
+# FIXME 暂时使用项目中复制下来的kube-config文件，从集群中复制下来的(正确的应该使用挂载)
+COPY --from=builder /app/resources resources/
 
 ENTRYPOINT ["./kube-aggregator-apiserver"]
