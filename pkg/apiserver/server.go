@@ -26,7 +26,7 @@ type TestServerOptions struct {
 	StdErr                io.Writer
 }
 
-// NewTestServerOptions returns a new WardleServerOptions
+// NewTestServerOptions returns a new TestServerOptions
 func NewTestServerOptions(out, errOut io.Writer, opt *configs.ParameterConfig) *TestServerOptions {
 	o := &TestServerOptions{
 		RecommendedOptions: genericoptions.NewRecommendedOptions(
@@ -34,7 +34,7 @@ func NewTestServerOptions(out, errOut io.Writer, opt *configs.ParameterConfig) *
 			// json格式解码器
 			configs.Codecs.LegacyCodec(v1beta1.SchemeGroupVersion),
 		),
-
+		// FIXME: informer这里初始化
 		StdOut: out,
 		StdErr: errOut,
 	}
@@ -121,6 +121,7 @@ func (o *TestServerOptions) Config() (*configs.Config, error) {
 	//	return []admission.PluginInitializer{wardleinitializer.New(informerFactory)}, nil
 	//}
 
+	// 设置推荐配置
 	serverConfig := genericapiserver.NewRecommendedConfig(configs.Codecs)
 
 	serverConfig.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(v1beta1.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(configs.Scheme))
@@ -131,6 +132,7 @@ func (o *TestServerOptions) Config() (*configs.Config, error) {
 		return nil, err
 	}
 
+	// 配置文件
 	config := &configs.Config{
 		GenericConfig: serverConfig,
 		ExtraConfig:   configs.ExtraConfig{},
@@ -138,7 +140,7 @@ func (o *TestServerOptions) Config() (*configs.Config, error) {
 	return config, nil
 }
 
-// RunTestServer starts a new WardleServer given TestServerOptions
+// RunTestServer starts a new TestServer given TestServerOptions
 func (o TestServerOptions) RunTestServer(stopCh <-chan struct{}) error {
 	cc, err := o.Config()
 	if err != nil {

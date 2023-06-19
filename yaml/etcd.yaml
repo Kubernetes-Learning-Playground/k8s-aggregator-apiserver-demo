@@ -54,3 +54,4 @@ spec:
     app: etcd
 
 # 启动etcd单机版 demo yaml文件
+# 参考自：https://blog.csdn.net/xingzuo_1840/article/details/120317296

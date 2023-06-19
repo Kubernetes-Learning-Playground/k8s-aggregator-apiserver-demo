@@ -63,7 +63,9 @@ type TestServer struct {
 }
 
 type completedConfig struct {
+	// GenericConfig genericServer配置
 	GenericConfig genericapiserver.CompletedConfig
+	// ExtraConfig 自定义的额外配置
 	ExtraConfig   *ExtraConfig
 }
 
@@ -78,6 +80,7 @@ func (cfg *Config) Complete() CompletedConfig {
 		cfg.GenericConfig.Complete(),
 		&cfg.ExtraConfig,
 	}
+	// FIXME 目前informer还无法使用
 	//c.GenericConfig.SharedInformerFactory =
 	c.GenericConfig.Version = &version.Info{
 		Major: "1",
@@ -90,21 +93,26 @@ func (cfg *Config) Complete() CompletedConfig {
 // New returns a new instance of WardleServer from the given configs.
 func (c completedConfig) New() (*TestServer, error) {
 
+	// 生成apiserver底层的genericServer
 	genericServer, err := c.GenericConfig.New("myapi", genericapiserver.NewEmptyDelegate())
 	if err != nil {
 		return nil, err
 	}
 
+	// 实例
 	s := &TestServer{
 		GenericAPIServer: genericServer,
 	}
 
+	// 重要步骤，创建和etcd交互
 	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(v1beta1.ApiGroup, Scheme, metav1.ParameterCodec, Codecs)
 	v1beta1storage := map[string]rest.Storage{}
+	// store.RESTInPeace store.NewREST 需要自己实现
 	v1beta1storage["myingresses"] = store.RESTInPeace(store.NewREST(Scheme, c.GenericConfig.RESTOptionsGetter))
-	//设置存储
+	// 设置存储
 	apiGroupInfo.VersionedResourcesStorageMap["v1beta1"] = v1beta1storage
 
+	// 注册本apiserver路由
 	if err := s.GenericAPIServer.InstallAPIGroup(&apiGroupInfo); err != nil {
 		return nil, err
 	}
