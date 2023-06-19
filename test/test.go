@@ -83,7 +83,7 @@ func getRcOpt() *genericoptions.RecommendedOptions {
 //	if err != nil {
 //		log.Fatalln(err)
 //	}
-//	//生成 apiserver 的推荐配置（默认配置)
+//	//生成 controller 的推荐配置（默认配置)
 //	config := genericapiserver.NewRecommendedConfig(Codecs)
 //
 //	err = getRcOpt().ApplyTo(config) //模板赋值
@@ -121,7 +121,7 @@ func getRcOpt() *genericoptions.RecommendedOptions {
 //
 //
 //
-//	// apiserver
+//	// controller
 //	server, err := completeConfig.
 //		New("myapi", genericapiserver.NewEmptyDelegate())
 //	if err != nil {
@@ -169,7 +169,7 @@ func main() {
 		Scheme,
 		metav1.ParameterCodec, Codecs)
 
-	//生成 apiserver 的推荐配置（默认配置)
+	//生成 controller 的推荐配置（默认配置)
 	config := genericapiserver.NewRecommendedConfig(Codecs)
 
 	err = getRcOpt().ApplyTo(config) //模板赋值
@@ -194,7 +194,7 @@ func main() {
 	}
 	////设置存储
 	agi.VersionedResourcesStorageMap[v1beta1.SchemeGroupVersion.Version] = resources
-	// apiserver
+	// controller
 	fmt.Println("ddd")
 	server, err := completeConfig.
 		New("myapi", genericapiserver.NewEmptyDelegate())

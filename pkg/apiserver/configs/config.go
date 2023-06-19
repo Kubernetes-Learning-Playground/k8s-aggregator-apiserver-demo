@@ -46,12 +46,12 @@ func init() {
 	)
 }
 
-// ExtraConfig holds custom apiserver configs
+// ExtraConfig holds custom controller configs
 type ExtraConfig struct {
 	// Place you custom configs here.
 }
 
-// Config defines the configs for the apiserver
+// Config defines the configs for the controller
 type Config struct {
 	GenericConfig *genericapiserver.RecommendedConfig
 	ExtraConfig   ExtraConfig

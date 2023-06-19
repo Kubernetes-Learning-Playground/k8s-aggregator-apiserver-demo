@@ -10,7 +10,7 @@
 # 打镜像
 docker build -t aggregator-apiserver:v1 .
 # 编译可执行文件
-docker run --rm -it -v /root/k8s-aggregator-apiserver:/app -w /app -e GOPROXY=https://goproxy.cn -e CGO_ENABLED=0  golang:1.18.7-alpine3.15 go build -o ./myapi .
+docker run --rm -it -v /root/k8s-aggregator-controller:/app -w /app -e GOPROXY=https://goproxy.cn -e CGO_ENABLED=0  golang:1.18.7-alpine3.15 go build -o ./myapi .
 ```
 2. 部署应用
 - 需要部署APIService资源对象

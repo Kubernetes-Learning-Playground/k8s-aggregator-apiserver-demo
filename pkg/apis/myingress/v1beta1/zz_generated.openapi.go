@@ -427,7 +427,7 @@ func schema_pkg_apis_meta_v1_APIResource(ref common.ReferenceCallback) common.Op
 					},
 					"storageVersionHash": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The hash value of the storage version, the version this resource is converted to when written to the data store. Value must be treated as opaque by clients. Only equality comparison on the value is valid. This is an alpha feature and may change or be removed in the future. The field is populated by the apiserver only if the StorageVersionHash feature gate is enabled. This field will remain optional even if it graduates.",
+							Description: "The hash value of the storage version, the version this resource is converted to when written to the data store. Value must be treated as opaque by clients. Only equality comparison on the value is valid. This is an alpha feature and may change or be removed in the future. The field is populated by the controller only if the StorageVersionHash feature gate is enabled. This field will remain optional even if it graduates.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1575,7 +1575,7 @@ func schema_pkg_apis_meta_v1_ObjectMeta(ref common.ReferenceCallback) common.Ope
 					},
 					"clusterName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The name of the cluster which the object belongs to. This is used to distinguish resources with same name and namespace in different clusters. This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.",
+							Description: "The name of the cluster which the object belongs to. This is used to distinguish resources with same name and namespace in different clusters. This field is not set anywhere right now and controller is going to ignore it if set in create or update request.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
