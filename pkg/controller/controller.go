@@ -1,27 +1,29 @@
 package controller
 
 import (
+	"context"
+	"fmt"
+	"time"
+
 	v1beta13 "github.com/myoperator/k8saggregatorapiserver/pkg/apis/myingress/v1beta1"
 	clientset "github.com/myoperator/k8saggregatorapiserver/pkg/client/clientset/versioned"
 	v1beta12 "github.com/myoperator/k8saggregatorapiserver/pkg/client/informers/externalversions/myingress/v1beta1"
 	"github.com/myoperator/k8saggregatorapiserver/pkg/client/listers/myingress/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
-	"context"
-	"time"
-	"fmt"
+
 )
 
-const controllerAgentName = "sample-controller"
+const controllerAgentName = "myIngress-controller"
 
 const (
 	// SuccessSynced is used as part of the Event 'reason' when a Foo is synced
@@ -45,27 +47,20 @@ type Controller struct {
 	// sampleclientset is a clientset for our own API group
 	sampleclientset clientset.Interface
 
+	// myingressLister myingressSynced 自定义资源的liser Informer 使用code-generator生成
 	myingressLister        v1beta1.MyIngressLister
 	myingressSynced        cache.InformerSynced
 
-	// workqueue is a rate limited work queue. This is used to queue work to be
-	// processed instead of performing it as soon as a change happens. This
-	// means we can ensure we only process a fixed amount of resources at a
-	// time, and makes it easy to ensure we are never processing the same item
-	// simultaneously in two different workers.
+	// workqueue k8s内部提供的限速队列
 	workqueue workqueue.RateLimitingInterface
-	// recorder is an event recorder for recording Event resources to the
-	// Kubernetes API.
+	// recorder 事件通知器，用于kubernetes api创建事件
 	recorder record.EventRecorder
 }
 
 
 // NewController returns a new sample controller
-func NewController(
-	ctx context.Context,
-	kubeclientset kubernetes.Interface,
-	sampleclientset clientset.Interface,
-	fooInformer v1beta12.MyIngressInformer) *Controller {
+func NewController(ctx context.Context, kubeclientset kubernetes.Interface, sampleclientset clientset.Interface,
+	myIngressInformer v1beta12.MyIngressInformer) *Controller {
 	logger := klog.FromContext(ctx)
 
 	// Create event broadcaster
@@ -74,27 +69,28 @@ func NewController(
 
 	utilruntime.Must(v1beta13.AddToScheme(scheme.Scheme))
 	logger.V(4).Info("Creating event broadcaster")
-
+	// 事件通知器
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartStructuredLogging(0)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 
+	// 控制器初始化
 	controller := &Controller{
 		kubeclientset:     kubeclientset,
 		sampleclientset:   sampleclientset,
-		myingressLister: fooInformer.Lister(),
-		myingressSynced: fooInformer.Informer().HasSynced,
+		myingressLister: myIngressInformer.Lister(),
+		myingressSynced: myIngressInformer.Informer().HasSynced,
 		workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "myingress"),
 		recorder:          recorder,
 	}
 
 	logger.Info("Setting up event handlers")
-	// Set up an event handler for when Foo resources change
-	fooInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.enqueueFoo,
+	// Set up an event handler for when myIngress resources change
+	myIngressInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: controller.enqueueMyIngress,
 		UpdateFunc: func(old, new interface{}) {
-			controller.enqueueFoo(new)
+			controller.enqueueMyIngress(new)
 		},
 	})
 
@@ -113,12 +109,13 @@ func (c *Controller) Run(ctx context.Context, workers int) error {
 	// Wait for the caches to be synced before starting workers
 	logger.Info("Waiting for informer caches to sync")
 
+	// 等待informer同步
 	if ok := cache.WaitForCacheSync(ctx.Done(), c.myingressSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
 	logger.Info("Starting workers", "count", workers)
-	// Launch two workers to process Foo resources
+	// 启动多个worker调协资源
 	for i := 0; i < workers; i++ {
 		go wait.UntilWithContext(ctx, c.runWorker, time.Second)
 	}
@@ -134,6 +131,7 @@ func (c *Controller) Run(ctx context.Context, workers int) error {
 // processNextWorkItem function in order to read and process a message on the
 // workqueue.
 func (c *Controller) runWorker(ctx context.Context) {
+	// 不断取出
 	for c.processNextWorkItem(ctx) {
 	}
 }
@@ -141,6 +139,7 @@ func (c *Controller) runWorker(ctx context.Context) {
 // processNextWorkItem will read a single work item off the workqueue and
 // attempt to process it, by calling the syncHandler.
 func (c *Controller) processNextWorkItem(ctx context.Context) bool {
+	// 从工作队列中取出
 	obj, shutdown := c.workqueue.Get()
 	logger := klog.FromContext(ctx)
 
@@ -173,7 +172,8 @@ func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 			return nil
 		}
 		// Run the syncHandler, passing it the namespace/name string of the
-		// Foo resource to be synced.
+		// MyIngress resource to be synced.
+		// 调协资源最重要的逻辑
 		if err := c.syncHandler(ctx, key); err != nil {
 			// Put the item back on the workqueue to handle any transient errors.
 			c.workqueue.AddRateLimited(key)
@@ -201,14 +201,15 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
 	//logger := klog.LoggerWithValues(klog.FromContext(ctx), "resourceName", key)
 
+	// 处理key
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("invalid resource key: %s", key))
 		return nil
 	}
 
-	// Get the Foo resource with this namespace/name
-	foo, err := c.myingressLister.MyIngresses(namespace).Get(name)
+	// 获取资源对象
+	myIngress, err := c.myingressLister.MyIngresses(namespace).Get(name)
 	if err != nil {
 		// The Foo resource may no longer exist, in which case we stop
 		// processing.
@@ -220,22 +221,24 @@ func (c *Controller) syncHandler(ctx context.Context, key string) error {
 		return err
 	}
 
+	// TODO: 控制器逻辑
+	klog.Info(myIngress)
 
-	klog.Info(foo)
-
-	c.recorder.Event(foo, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
+	c.recorder.Event(myIngress, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil
 }
 
-// enqueueFoo takes a Foo resource and converts it into a namespace/name
+// enqueueMyIngress takes a Foo resource and converts it into a namespace/name
 // string which is then put onto the work queue. This method should *not* be
 // passed resources of any type other than Foo.
-func (c *Controller) enqueueFoo(obj interface{}) {
+func (c *Controller) enqueueMyIngress(obj interface{}) {
 	var key string
 	var err error
+	// 使用 "<namespace>/<name>" 作为key
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
 		utilruntime.HandleError(err)
 		return
 	}
+	// 加入队列
 	c.workqueue.Add(key)
 }

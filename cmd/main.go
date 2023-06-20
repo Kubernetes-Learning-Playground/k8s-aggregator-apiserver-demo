@@ -2,12 +2,13 @@ package main
 
 import (
 	"flag"
+	"os"
+
 	"github.com/myoperator/k8saggregatorapiserver/pkg/apiserver"
 	"github.com/myoperator/k8saggregatorapiserver/pkg/apiserver/configs"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/logs"
 	"k8s.io/klog/v2"
-	"os"
 )
 
 var (

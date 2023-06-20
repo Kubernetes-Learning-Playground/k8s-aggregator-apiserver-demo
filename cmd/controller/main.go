@@ -2,12 +2,12 @@ package main
 
 import (
 	"flag"
+	"time"
+
 	clientset "github.com/myoperator/k8saggregatorapiserver/pkg/client/clientset/versioned"
 	informers "github.com/myoperator/k8saggregatorapiserver/pkg/client/informers/externalversions"
 	cc "github.com/myoperator/k8saggregatorapiserver/pkg/controller"
-	"github.com/myoperator/k8saggregatorapiserver/pkg/signal"
-	"time"
-
+	"github.com/myoperator/k8saggregatorapiserver/pkg/signals"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -24,10 +24,13 @@ var (
 
 func main() {
 	klog.InitFlags(nil)
+	// 命令行入参
+	flag.StringVar(&kubeconfig, "kubeconfig", "./resources/config", "Path to a kubeconfig. Only required if out-of-cluster.")
+	flag.StringVar(&masterURL, "master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 	flag.Parse()
 
-	// set up signals so we handle the shutdown signal gracefully
-	ctx := signal.SetupSignalHandler()
+	// 优雅退出机制
+	ctx := signals.SetupSignalHandler()
 	logger := klog.FromContext(ctx)
 
 	cfg, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
@@ -36,6 +39,7 @@ func main() {
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
+	// 初始化客户端
 	kubeClient, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		logger.Error(err, "Error building kubernetes clientset")
@@ -47,24 +51,21 @@ func main() {
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
+	// informer初始化
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
 	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
 
+	// 控制器
 	controller := cc.NewController(ctx, kubeClient, exampleClient,
 		exampleInformerFactory.Apis().V1beta1().MyIngresses())
 
-	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(ctx.done())
-	// Start method is non-blocking and runs all registered informers in a dedicated goroutine.
+	// 启动informer start方法
 	kubeInformerFactory.Start(ctx.Done())
 	exampleInformerFactory.Start(ctx.Done())
 
+	// 启动控制器
 	if err = controller.Run(ctx, 1); err != nil {
 		logger.Error(err, "Error running controller")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
-}
-
-func init() {
-	flag.StringVar(&kubeconfig, "kubeconfig", "./resources/config", "Path to a kubeconfig. Only required if out-of-cluster.")
-	flag.StringVar(&masterURL, "master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 }
