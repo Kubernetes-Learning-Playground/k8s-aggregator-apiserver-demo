@@ -66,7 +66,7 @@ type completedConfig struct {
 	// GenericConfig genericServer配置
 	GenericConfig genericapiserver.CompletedConfig
 	// ExtraConfig 自定义的额外配置
-	ExtraConfig   *ExtraConfig
+	ExtraConfig *ExtraConfig
 }
 
 // CompletedConfig embeds a private pointer that cannot be instantiated outside of this package.

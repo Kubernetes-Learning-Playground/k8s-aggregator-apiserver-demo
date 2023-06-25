@@ -20,7 +20,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
-
 )
 
 const controllerAgentName = "myIngress-controller"
@@ -48,15 +47,14 @@ type Controller struct {
 	sampleclientset clientset.Interface
 
 	// myingressLister myingressSynced 自定义资源的liser Informer 使用code-generator生成
-	myingressLister        v1beta1.MyIngressLister
-	myingressSynced        cache.InformerSynced
+	myingressLister v1beta1.MyIngressLister
+	myingressSynced cache.InformerSynced
 
 	// workqueue k8s内部提供的限速队列
 	workqueue workqueue.RateLimitingInterface
 	// recorder 事件通知器，用于kubernetes api创建事件
 	recorder record.EventRecorder
 }
-
 
 // NewController returns a new sample controller
 func NewController(ctx context.Context, kubeclientset kubernetes.Interface, sampleclientset clientset.Interface,
@@ -77,12 +75,12 @@ func NewController(ctx context.Context, kubeclientset kubernetes.Interface, samp
 
 	// 控制器初始化
 	controller := &Controller{
-		kubeclientset:     kubeclientset,
-		sampleclientset:   sampleclientset,
+		kubeclientset:   kubeclientset,
+		sampleclientset: sampleclientset,
 		myingressLister: myIngressInformer.Lister(),
 		myingressSynced: myIngressInformer.Informer().HasSynced,
-		workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "myingress"),
-		recorder:          recorder,
+		workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "myingress"),
+		recorder:        recorder,
 	}
 
 	logger.Info("Setting up event handlers")
@@ -93,7 +91,6 @@ func NewController(ctx context.Context, kubeclientset kubernetes.Interface, samp
 			controller.enqueueMyIngress(new)
 		},
 	})
-
 
 	return controller
 }

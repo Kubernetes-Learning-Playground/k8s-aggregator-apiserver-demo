@@ -14,7 +14,6 @@ import (
 	"k8s.io/klog/v2"
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
 )
 
 var (

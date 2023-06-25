@@ -124,6 +124,7 @@ func (MyIngressStrategy) Canonicalize(obj runtime.Object) {
 func (MyIngressStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
 	return field.ErrorList{}
 }
+
 func NewREST(scheme *runtime.Scheme, optsGetter generic.RESTOptionsGetter) (*REST, error) {
 	strategy := NewStrategy(scheme)
 

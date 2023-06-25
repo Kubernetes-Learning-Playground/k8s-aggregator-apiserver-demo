@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myingress-controller
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: myingress-controller
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: myingress-controller
+    spec:
+      nodeName: vm-0-16-centos # 只调度到这个节点上
+      serviceAccountName: myingress-sa # 配置service account
+      containers:
+        - name: myingress
+          image: myingresscontroller:v1
+          imagePullPolicy: IfNotPresent
+          args:
+            # 服务配置项
+            - --kubeconfig=/app/resources/config  # 证书文件
+          ports:
+            - containerPort: 80

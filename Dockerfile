@@ -1,3 +1,4 @@
+# apiserver的Dockerfile文件
 FROM golang:1.18.7-alpine3.15 as builder
 
 WORKDIR /app
