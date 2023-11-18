@@ -56,7 +56,7 @@ No resources found in default namespace.
 ```
 #### controller部署
 
-1. 打镜像(注意：这里需要自行适配，deploy.yaml中适用镜像方式)
+1. 打镜像
 ```bash
 # 打镜像
 docker build -t myingresscontroller:v1 .
@@ -72,4 +72,7 @@ deployment.apps/myingress-controller created
 ```
 3. 服务启动成功，现在只要在集群中创建自定义资源，就是由aggregator-apiserver处理请求，
 并使用contoller来进行资源调协。
+
+项目部署架构如下图所示：
+![](https://github.com/Kubernetes-Learning-Playground/k8s-aggregator-apiserver-demo/blob/main/image/%E6%B5%81%E7%A8%8B%E5%9B%BE%20(1).jpg?raw=true)
    
