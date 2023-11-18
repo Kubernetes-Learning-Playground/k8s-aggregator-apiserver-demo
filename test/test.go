@@ -30,7 +30,7 @@ var (
 )
 
 // TODO: 修改注解与改成入参配置
-//推荐配置 模板
+// 推荐配置 模板
 func getRcOpt() *genericoptions.RecommendedOptions {
 	rc := genericoptions.NewRecommendedOptions(
 		defaultEtcdPathPrefix,
@@ -192,7 +192,7 @@ func main() {
 		"myingresses": store.RESTInPeace(store.NewREST(Scheme,
 			completeConfig.RESTOptionsGetter)),
 	}
-	////设置存储
+	//设置存储
 	agi.VersionedResourcesStorageMap[v1beta1.SchemeGroupVersion.Version] = resources
 	// controller
 	fmt.Println("ddd")

@@ -13,6 +13,7 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/apiserver/pkg/storage/names"
+	"k8s.io/klog/v2"
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
 	"k8s.io/kube-openapi/pkg/validation/validate"
 )
@@ -22,7 +23,6 @@ type REST struct {
 	*genericregistry.Store
 }
 
-//
 func (*REST) ShortNames() []string {
 	return []string{"mi"}
 }
@@ -35,7 +35,7 @@ func RESTInPeace(storage rest.StandardStorage, err error) rest.StandardStorage {
 	return storage
 }
 
-// 构建 myIngress增删改查策略 就是怎么新增、怎么删除、怎么修改
+// NewStrategy 构建资源对象的增删改查策略
 func NewStrategy(typer runtime.ObjectTyper) MyIngressStrategy {
 	return MyIngressStrategy{typer, names.SimpleNameGenerator}
 }
@@ -49,9 +49,8 @@ func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
 	return labels.Set(apiserver.ObjectMeta.Labels), SelectableFields(apiserver), nil
 }
 
-// 标签 和字段 匹配器
+// MatchMyIngress 标签和字段匹配器
 func MatchMyIngress(label labels.Selector, field fields.Selector) storage.SelectionPredicate {
-
 	return storage.SelectionPredicate{
 		Label:    label,
 		Field:    field,
@@ -69,13 +68,13 @@ type MyIngressStrategy struct {
 	names.NameGenerator
 }
 
-// 更新时发出的警告
+// WarningsOnUpdate 更新时发出的警告
 func (s MyIngressStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
 	//TODO implement me
 	return []string{}
 }
 
-// 创建时 是否要发出警告
+// WarningsOnCreate 创建时发出警告
 func (s MyIngressStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
 	//TODO implement me
 	return []string{}
@@ -85,18 +84,21 @@ func (MyIngressStrategy) NamespaceScoped() bool {
 	return true
 }
 
-// Validate 之前调用
+// PrepareForCreate 创建前调用 hook
 func (MyIngressStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
-
+	klog.Info("PrepareForCreate method...")
 }
 
+// PrepareForUpdate 更新前调用 hook
 func (MyIngressStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
+	klog.Info("PrepareForUpdate method...")
 }
 
-// 这是字段验证相关
+// Validate 字段验证相关
 func (MyIngressStrategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
 	errList := field.ErrorList{}
-	validatePath := field.NewPath("spec") //代表我们验证的是spec
+	// 验证 spec 字段内容
+	validatePath := field.NewPath("spec")
 
 	spec := obj.(*v1beta1.MyIngress).Spec
 	schema := spec.OpenAPIDefinition().Schema
@@ -109,6 +111,11 @@ func (MyIngressStrategy) Validate(ctx context.Context, obj runtime.Object) field
 	return field.ErrorList{}
 }
 
+// ValidateUpdate 更新验证方法
+func (MyIngressStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
+	return field.ErrorList{}
+}
+
 func (MyIngressStrategy) AllowCreateOnUpdate() bool {
 	return true
 }
@@ -118,36 +125,4 @@ func (MyIngressStrategy) AllowUnconditionalUpdate() bool {
 }
 
 func (MyIngressStrategy) Canonicalize(obj runtime.Object) {
-}
-
-// 依然不高兴验证
-func (MyIngressStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
-	return field.ErrorList{}
-}
-
-func NewREST(scheme *runtime.Scheme, optsGetter generic.RESTOptionsGetter) (*REST, error) {
-	strategy := NewStrategy(scheme)
-
-	store := &genericregistry.Store{
-		NewFunc: func() runtime.Object {
-			return &v1beta1.MyIngress{}
-		},
-		NewListFunc: func() runtime.Object {
-			return &v1beta1.MyIngressList{}
-		},
-		PredicateFunc:            MatchMyIngress,
-		DefaultQualifiedResource: v1beta1.SchemeGroupResource,
-
-		CreateStrategy: strategy,
-		UpdateStrategy: strategy,
-		DeleteStrategy: strategy,
-
-		// TODO: define table converter that exposes more than name/creation timestamp
-		TableConvertor: rest.NewDefaultTableConvertor(v1beta1.SchemeGroupResource),
-	}
-	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: GetAttrs}
-	if err := store.CompleteWithOptions(options); err != nil {
-		return nil, err
-	}
-	return &REST{store}, nil
 }
